@@ -64,9 +64,9 @@ for lag in range(p, 0, -1):
     if all(results.pvalues[1:] < significance_level):
         significant_lags.append((lag, results))
 
-for lag_order, best_model in significant_lags:
-    print(f"Best model with {lag_order} lag(s):")
-    print(best_model.summary())
+for lag, model in significant_lags:
+    print(f"Best model with {lag} lag(s):")
+    print(model.summary())
 
 
 ## Exercise 3
