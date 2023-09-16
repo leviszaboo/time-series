@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from statsmodels.tsa.ar_model import AutoReg
 
-data = pd.read_csv('data_assign_p1.csv')
+data = pd.read_csv("Assignment 1/data_assign_p1.csv")
 
 quarters = data['obs']
 gdp_growth = data['GDP_QGR']
@@ -48,4 +48,19 @@ ax2.grid(True)
 
 plt.tight_layout()
 plt.show()
+
+# Exercise 2
+
+p_max = 4
+significance_level = 0.05
+
+# Fit the AutoReg model with general-to-specific modeling approach
+best_model = None
+best_lags = 0
+
+for p in range(1, p_max + 1):
+    model = AutoReg(gdp_growth, lags=p, old_names=False)
+    results = model.fit()
+    
+    print(results.summary())
 
