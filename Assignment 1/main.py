@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy.stats as stats
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from statsmodels.tsa.ar_model import AutoReg
 
@@ -86,3 +87,50 @@ for lag, model in significant_lags:
 
 for lag, acf_plot in acf_plots.items():
     plt.show()
+
+# Exercise 4
+
+forecast_horizon = 8
+
+forecast_quarters = ["2009Q2", "2009Q3", "2009Q4", "2010Q1", "2010Q2", "2010Q3", "2010Q4", "2011Q1"]
+forecasts = []
+
+for lag, model in significant_lags:
+    values = model.predict(start=len(gdp_growth), end=len(gdp_growth) + forecast_horizon - 1, dynamic=False)
+    values = values.to_frame(name="Prediction")
+    values['Quarter'] = forecast_quarters
+    values = values.set_index("Quarter")
+    forecasts.append((f"Model with {lag} lag(s)", values))
+
+print("Quarterly GDP Growth Rate Forecast:")
+for label, values in forecasts:
+  print(f"{label}: \n")
+  print(values)
+
+# Exercise 5
+
+def prediction_conf_int(X: float, h: int, alpha: float, var: float, phi: float) -> tuple[float, float]:
+    var_hth_resid = var * np.sum([phi ** (2 * i - 1) for i in range(1, h + 1)])
+    std_err = np.sqrt(var_hth_resid)
+    z = stats.norm.ppf(1 - (alpha / 2))
+    return (X - z * std_err, X + z * std_err)
+
+conf_intervals = []
+
+for index, (lag, model) in enumerate(significant_lags):
+    phi = model.params[1]
+    var = np.var(model.resid)
+    model_intervals = []
+    forecasted = forecasts[index][1].reset_index()
+    X_forecasted = forecasted['Prediction']
+    for i in range(1, forecast_horizon + 1):
+      X = X_forecasted[i - 1]
+      conf_interval = prediction_conf_int(X, i, alpha, var, phi)
+      model_intervals.append([i, conf_interval])
+    conf_intervals.append((lag, model_intervals))
+
+print("Summary of 95% Confidence Intervals:")
+for lag, model_intervals in conf_intervals:
+    print(f"Model with {lag} lag(s):")
+    for i, conf_interval in model_intervals:
+        print(f"  h = {i}: ({conf_interval[0]:.4f}, {conf_interval[1]:.4f})")
