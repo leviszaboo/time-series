@@ -5,10 +5,12 @@ import scipy.stats as stats
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from statsmodels.tsa.ar_model import AutoReg
 
-data = pd.read_csv("Assignment 1/data_assign_p1.csv")
+data = pd.read_csv("data_assign_p1.csv")
 
 quarters = data['obs']
 gdp_growth = data['GDP_QGR']
+
+alpha = 0.05
 
 ## Exercise 1
 
@@ -29,7 +31,7 @@ plt.show()
 
 # ACF and PACF
 
-periods = 12  
+periods = 12
 
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6))
 
@@ -54,20 +56,19 @@ plt.show()
 ## Exercise 2
 
 p = 4
-significance_level = 0.05
 
 significant_lags = []
 
 for lag in range(p, 0, -1):
     model = AutoReg(gdp_growth, lags=lag, old_names=False)
     results = model.fit()
-    
-    if all(results.pvalues[1:] < significance_level):
+
+    if all(results.pvalues[1:] < alpha):
         significant_lags.append((lag, results))
 
-for lag, model in significant_lags:
-    print(f"Best model with {lag} lag(s):")
-    print(model.summary())
+for lag_order, best_model in significant_lags:
+    print(f"Best model with {lag_order} lag(s):")
+    print(best_model.summary())
 
 
 ## Exercise 3
@@ -94,7 +95,6 @@ forecast_horizon = 8
 
 forecast_quarters = ["2009Q2", "2009Q3", "2009Q4", "2010Q1", "2010Q2", "2010Q3", "2010Q4", "2011Q1"]
 forecasts = []
-
 for lag, model in significant_lags:
     values = model.predict(start=len(gdp_growth), end=len(gdp_growth) + forecast_horizon - 1, dynamic=False)
     values = values.to_frame(name="Prediction")
