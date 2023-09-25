@@ -5,7 +5,7 @@ import scipy.stats as stats
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from statsmodels.tsa.ar_model import AutoReg
 
-data = pd.read_csv("data_assign_p1.csv")
+data = pd.read_csv("assignment_1/data_assign_p1.csv")
 
 quarters = data['obs']
 gdp_growth = data['GDP_QGR']
