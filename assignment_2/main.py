@@ -80,9 +80,9 @@ y_adl = df['UN_RATE']
 adl_model = sm.OLS(y_adl, X_adl).fit()
 print("Best ADL model:")
 print(adl_model.summary())
+print(adl_model.params)
 
 # Exercise 3: 8 period forecast for unemployment rate
-
 ar_coeffs = ar_model.params
 adl_coeffs = adl_model.params
 
@@ -91,10 +91,10 @@ GDP_QGR_values = [gdp_growth.values[-3], gdp_growth.values[-2], gdp_growth.value
 
 print(UN_RATE_values, GDP_QGR_values)
 
-forecast_periods = 8
+forecast_periods = 50
 
-forecasted_UN_RATE = []
-forecasted_GDP_QGR = []
+forecasted_UN_RATE = [unemployment_rate.values[-1], unemployment_rate.values[-1]]
+forecasted_GDP_QGR = [gdp_growth.values[-1], gdp_growth.values[-1]]
 
 for i in range(forecast_periods):
     next_UN_RATE = (
@@ -103,16 +103,16 @@ for i in range(forecast_periods):
         + adl_coeffs[2] * UN_RATE_values[-1]
         + adl_coeffs[3] * UN_RATE_values[-3]
     )
-    
+
     next_GDP_QGR = (
         ar_coeffs[0]
         + ar_coeffs[1] * GDP_QGR_values[-1]
         + ar_coeffs[2] * GDP_QGR_values[-3]
     )
-    
+
     UN_RATE_values.append(next_UN_RATE)
     GDP_QGR_values.append(next_GDP_QGR)
-    
+
     forecasted_UN_RATE.append(next_UN_RATE)
     forecasted_GDP_QGR.append(next_GDP_QGR)
 
@@ -120,13 +120,13 @@ time_axis = range(1, forecast_periods + 1)
 
 plt.figure(figsize=(12, 6))
 plt.subplot(2, 1, 1)
-plt.plot(time_axis, forecasted_UN_RATE, label='Forecasted Unemployment Rate')
+plt.plot(time_axis, forecasted_UN_RATE[2:], label='Forecasted Unemployment Rate')
 plt.xlabel('Time Period')
 plt.ylabel('Unemployment Rate')
 plt.legend()
 
 plt.subplot(2, 1, 2)
-plt.plot(time_axis, forecasted_GDP_QGR, label='Forecasted GDP Growth Rate', color="orange")
+plt.plot(time_axis, forecasted_GDP_QGR[2:], label='Forecasted GDP Growth Rate', color="orange")
 plt.xlabel('Time Period')
 plt.ylabel('GDP Growth Rate')
 plt.legend()
@@ -135,9 +135,124 @@ plt.tight_layout()
 plt.show()
 
 print("8-period forecasted unemployment rate(%):")
-for index, rate in enumerate(forecasted_UN_RATE): 
+for index, rate in enumerate(forecasted_UN_RATE):
   print(f"Period {index + 1}: {rate:.4f}")
 
+# Exercise 4: Impulse response functions
 
+# Good scenario
+initial_UN_RATE = unemployment_rate.values[-1]
+initial_GDP_QGR = gdp_growth.values[-1]
+
+initial_GDP_QGR += 2
+
+UN_RATE_values_good = [unemployment_rate.values[-3], unemployment_rate.values[-2], initial_UN_RATE]
+GDP_QGR_values_good = [gdp_growth.values[-3], gdp_growth.values[-2], initial_GDP_QGR]
+
+forecasted_UN_RATE_good = [initial_UN_RATE, initial_UN_RATE]
+forecasted_GDP_QGR_good = [gdp_growth.values[-1], initial_GDP_QGR]
+
+for i in range(forecast_periods):
+    next_UN_RATE = (
+        adl_coeffs[0]
+        + adl_coeffs[1] * GDP_QGR_values_good[-1]
+        + adl_coeffs[2] * UN_RATE_values_good[-1]
+        + adl_coeffs[3] * UN_RATE_values_good[-3]
+    )
+
+    next_GDP_QGR = (
+        ar_coeffs[0]
+        + ar_coeffs[1] * GDP_QGR_values_good[-1]
+        + ar_coeffs[2] * GDP_QGR_values_good[-3]
+    )
+
+    UN_RATE_values_good.append(next_UN_RATE)
+    GDP_QGR_values_good.append(next_GDP_QGR)
+
+    forecasted_UN_RATE_good.append(next_UN_RATE)
+    forecasted_GDP_QGR_good.append(next_GDP_QGR)
+
+forecast_difference_UN_RATE = [x - y for x, y in zip(forecasted_UN_RATE_good, forecasted_UN_RATE)]
+forecast_difference_GDP_QGR = [x - y for x, y in zip(forecasted_GDP_QGR_good, forecasted_GDP_QGR)]
+
+time_axis = range(-1, forecast_periods + 1)
+
+plt.figure(figsize=(12, 6))
+plt.subplot(2, 1, 1)
+plt.plot(time_axis, forecast_difference_UN_RATE, label='Good Scenario IRF Unemployment Rate', color='red')
+plt.axhline(0, color='red', linewidth=1.5, xmin=0, xmax=0.045)
+plt.axhline(0, color='black', linestyle='--', linewidth=1, xmin=0.06, xmax=1)
+plt.xlabel('Time Period')
+plt.ylabel('Change in unemployment rate')
+plt.legend()
+
+plt.subplot(2, 1, 2)
+plt.plot(time_axis, forecast_difference_GDP_QGR, label='Good Scenario IRF GDP Growth Rate', color='green')
+plt.axhline(0, color='green', linewidth=1.5, xmin=0, xmax=0.045)
+plt.axhline(0, color='black', linestyle='--', linewidth=1, xmin=0.045, xmax=1)
+plt.xlabel('Time Period')
+plt.ylabel('Change in GDP Growth')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+
+# Bad scenario
+
+initial_UN_RATE = unemployment_rate.values[-1]
+initial_GDP_QGR = gdp_growth.values[-1]
+
+initial_GDP_QGR -= 2
+
+UN_RATE_values_bad = [unemployment_rate.values[-3], unemployment_rate.values[-2], initial_UN_RATE]
+GDP_QGR_values_bad = [gdp_growth.values[-3], gdp_growth.values[-2], initial_GDP_QGR]
+
+forecasted_UN_RATE_bad = [initial_UN_RATE, initial_UN_RATE]
+forecasted_GDP_QGR_bad = [gdp_growth.values[-1], initial_GDP_QGR]
+
+print(adl_coeffs)
+
+for i in range(forecast_periods):
+    next_UN_RATE = (
+        adl_coeffs[0]
+        + adl_coeffs[1] * GDP_QGR_values_bad[-1]
+        + adl_coeffs[2] * UN_RATE_values_bad[-1]
+        + adl_coeffs[3] * UN_RATE_values_bad[-3]
+    )
+
+    next_GDP_QGR = (
+        ar_coeffs[0]
+        + ar_coeffs[1] * GDP_QGR_values_bad[-1]
+        + ar_coeffs[2] * GDP_QGR_values_bad[-3]
+    )
+
+    UN_RATE_values_bad.append(next_UN_RATE)
+    GDP_QGR_values_bad.append(next_GDP_QGR)
+
+    forecasted_UN_RATE_bad.append(next_UN_RATE)
+    forecasted_GDP_QGR_bad.append(next_GDP_QGR)
+
+forecast_difference_UN_RATE = [x - y for x, y in zip(forecasted_UN_RATE_bad, forecasted_UN_RATE)]
+forecast_difference_GDP_QGR = [x - y for x, y in zip(forecasted_GDP_QGR_bad, forecasted_GDP_QGR)]
+
+plt.figure(figsize=(12, 6))
+plt.subplot(2, 1, 1)
+plt.plot(time_axis, forecast_difference_UN_RATE, label='Bad Scenario IRF Unemployment Rate', color='red')
+plt.axhline(0, color='red', linewidth=1.5, xmin=0, xmax=0.045)
+plt.axhline(0, color='black', linestyle='--', linewidth=1, xmin=0.06, xmax=1)
+plt.xlabel('Time Period')
+plt.ylabel('Change in unemployment rate')
+plt.legend()
+
+plt.subplot(2, 1, 2)
+plt.plot(time_axis, forecast_difference_GDP_QGR, label='Bad Scenario IRF GDP Growth Rate', color='green')
+plt.axhline(0, color='green', linewidth=1.5, xmin=0, xmax=0.045)
+plt.axhline(0, color='black', linestyle='--', linewidth=1, xmin=0.045, xmax=1)
+plt.xlabel('Time Period')
+plt.ylabel('Change in gdp growth')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
 
 
