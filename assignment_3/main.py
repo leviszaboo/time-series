@@ -3,7 +3,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+from statsmodels.tsa.stattools import adfuller
 import seaborn as sns
+from scipy.stats import norm
 
 np.random.seed(0)
 
@@ -121,4 +123,138 @@ plot_pacf(apple, lags=12, title='PACF for Apple Stock')
 plot_acf(netflix, lags=12, title='ACF for Netflix Stock')
 
 plot_pacf(netflix, lags=12, title='PACF for Netflix Stock')
+
+
+# Exercise 3
+
+def perform_adf_test(series):
+    best_order = None
+    best_sic = np.inf
+    
+    for lag in range(1, 5):  
+        result = adfuller(series, maxlag=lag)
+        sic = result[5]  
+        
+        if sic < best_sic:
+            best_sic = sic
+            best_order = lag
+    
+    result = adfuller(series, maxlag=best_order)
+    
+    adf_statistic = result[0]
+    critical_values = result[4]
+
+    is_stationary = adf_statistic < critical_values['10%']
+    
+    return adf_statistic, is_stationary
+
+results = []
+
+for column in data.columns[1:]:
+    series = data[column]
+    adf_statistic, is_stationary = perform_adf_test(series)
+    
+    result = {
+        "Stock": column,
+        "ADF Statistic": adf_statistic,
+        "Stationary at 90% Confidence Level": is_stationary
+    }
+    
+    results.append(result)
+
+results_df = pd.DataFrame(results)
+
+print(results_df)
+
+# Exercise 4
+
+microsoft = data['MICROSOFT']
+
+apple_diffs = apple.diff()
+microsoft_diffs = microsoft.diff()
+
+mean_diff_apple = apple_diffs.mean()
+var_apple = apple_diffs.var()
+
+mean_diff_microsoft = microsoft_diffs.mean()
+var_microsoft = microsoft_diffs.var()
+
+forecast_days = 5
+alpha = 0.05
+z = norm.ppf(1 - (alpha) / 2)
+
+apple_forecast_df = pd.DataFrame(columns=['Forecasted Price', 'Lower Bound', 'Upper Bound'])
+microsoft_forecast_df = pd.DataFrame(columns=['Forecasted Price', 'Lower Bound', 'Upper Bound'])
+
+for day in range(forecast_days):
+    last_apple_price = apple_forecast_df.iloc[-1]['Forecasted Price'] if day > 0 else apple.iloc[-1]
+    random_innovation_apple = np.random.normal(mean_diff_apple, np.sqrt(var_apple))
+    last_apple_price += random_innovation_apple
+    std_error_apple = np.sqrt(var_apple * (day + 1))
+    lower_bound_apple = last_apple_price - z * std_error_apple
+    upper_bound_apple = last_apple_price + z * std_error_apple
+    last_microsoft_price = microsoft_forecast_df.iloc[-1]['Forecasted Price'] if day > 0 else microsoft.iloc[-1]
+    random_innovation_microsoft = np.random.normal(mean_diff_microsoft, np.sqrt(var_microsoft))
+    last_microsoft_price += random_innovation_microsoft
+    std_error_microsoft = np.sqrt(var_microsoft * (day + 1) )
+    lower_bound_microsoft = last_microsoft_price - z * std_error_microsoft 
+    upper_bound_microsoft = last_microsoft_price + z * std_error_microsoft
+
+    apple_forecast_df.loc[day] = [last_apple_price, lower_bound_apple, upper_bound_apple]
+    microsoft_forecast_df.loc[day] = [last_microsoft_price, lower_bound_microsoft, upper_bound_microsoft]
+
+print("5-Day Stock Price Forecast for Apple:")
+apple_forecast_df
+
+print("\n5-Day Stock Price Forecast for Microsoft:")
+microsoft_forecast_df
+
+plt.figure(figsize=(12, 6))
+plt.subplot(2, 1, 1)
+plt.plot(np.arange(1, forecast_days + 1), apple_forecast_df['Forecasted Price'], label='Forecasted Apple Prices', marker='o', linestyle='--')
+plt.fill_between(np.arange(1, forecast_days + 1), apple_forecast_df['Lower Bound'], apple_forecast_df['Upper Bound'], alpha=0.2, color='blue')
+plt.title('Apple Stock Price Forecast')
+plt.xticks([1, 2, 3, 4, 5])
+plt.xlabel('Day')
+plt.ylabel('Price')
+
+plt.subplot(2, 1, 2)
+plt.plot(np.arange(1, forecast_days + 1), microsoft_forecast_df['Forecasted Price'], label='Forecasted Microsoft Prices', marker='o', linestyle='--')
+plt.fill_between(np.arange(1, forecast_days + 1), microsoft_forecast_df['Lower Bound'], microsoft_forecast_df['Upper Bound'], alpha=0.2, color='orange')
+plt.title('Microsoft Stock Price Forecast')
+plt.xticks([1, 2, 3, 4, 5])
+plt.xlabel('Day')
+plt.ylabel('Price')
+
+plt.tight_layout()
+plt.show()
+
+# Exercise 5
+
+exxon = data['EXXON_MOBIL']
+
+microsoft_returns = microsoft.pct_change()
+exxon_returns = exxon.pct_change()
+
+exxon_returns = exxon_returns.replace([np.inf, -np.inf], np.nan).dropna()
+microsoft_returns = microsoft_returns.replace([np.inf, -np.inf], np.nan).dropna()
+
+X = exxon
+Y = microsoft
+
+X = sm.add_constant(X)
+
+model = sm.OLS(Y, X).fit()
+
+print(model.summary())
+
+X = exxon_returns
+Y = microsoft_returns
+
+X = sm.add_constant(X)
+
+model = sm.OLS(Y, X).fit()
+
+print(model.summary(yname='Microsoft_Returns', xname=['Intercept', 'Exxon_Returns']))
+
 
