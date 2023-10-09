@@ -11,7 +11,7 @@ np.random.seed(0)
 
 sigma = 1.0
 B = 10000
-sample_sizes = [30, 50, 100, 500, 1000, 2000, 5000, 10000]
+sample_sizes = [30, 100, 500, 1000, 2000, 5000, 10000]
 
 beta_hat_dict = {}
 r_squared_dict = {}
@@ -42,41 +42,49 @@ for sample_size in sample_sizes:
         p_value = model.pvalues[1]
         p_value_dict[sample_size][i] = p_value
 
-
 fig, axes = plt.subplots(4, 1, figsize=(10, 15))
 
-for sample_size in sample_sizes:
+for i, sample_size in enumerate(sample_sizes):
     sns.kdeplot(beta_hat_dict[sample_size], label=f'Sample Size {sample_size}', ax=axes[0])
 
-axes[0].set_xlabel('Beta Hat')
-axes[0].set_ylabel('Density')
-axes[0].set_title('Distribution of Beta Hat for Different Sample Sizes')
+for i, sample_size in enumerate(sample_sizes):
+    axes[0].hist(beta_hat_dict[sample_size], alpha=0.1, density=True, bins=100)
+
+axes[0].set_xlabel('$\\hat{\\beta}$')
+axes[0].set_title('Distribution of $\\hat{\\beta}$ for Different Sample Sizes')
 axes[0].legend()
 axes[0].grid(True)
 
-for sample_size in sample_sizes:
-    axes[1].hist(t_test_dict[sample_size], bins=100, density=False, alpha=0.5, label=f'Sample Size {sample_size}')
+for i, sample_size in enumerate(sample_sizes):
+    sns.kdeplot(r_squared_dict[sample_size], label=f'Sample Size {sample_size}', ax=axes[1])
 
-axes[1].set_xlabel('|Beta Hat| / SE(Beta Hat)')
-axes[1].set_ylabel('Observations')
-axes[1].set_title('Distribution of |Beta Hat| / SE(Beta Hat) for Different Sample Sizes')
+for i, sample_size in enumerate(sample_sizes):
+    axes[1].hist(r_squared_dict[sample_size], alpha=0.1, density=True, bins=100)
+
+axes[1].set_xlabel('R-squared')
+axes[1].set_title('Distribution of R-squared for Different Sample Sizes')
+axes[1].set_xlim(0)
 axes[1].legend()
 axes[1].grid(True)
 
-for sample_size in sample_sizes:
-    axes[2].hist(r_squared_dict[sample_size], bins=100, density=False, alpha=0.5, label=f'Sample Size {sample_size}')
+for i, sample_size in enumerate(sample_sizes):
+    axes[2].hist(t_test_dict[sample_size], alpha=0.6, density=True, bins=100, label=f'Sample Size {sample_size}')
 
-axes[2].set_xlabel('R-squared')
-axes[2].set_ylabel('Observations')
-axes[2].set_title('Distribution of R-squared for Different Sample Sizes')
+axes[2].set_title('Distribution of $| \\hat{\\beta} | / SE(\\hat{\\beta})$ for Different Sample Sizes')
+axes[2].set_xlabel('Sample Size')
+axes[2].set_ylabel('Density')
 axes[2].legend()
+axes[2].set_xlim(0, 60)
+axes[2].set_axisbelow(True)
 axes[2].grid(True)
 
 p_value_proportions = [np.mean(p_value_dict[sample_size] < 0.05) for sample_size in sample_sizes]
-sns.barplot(x=sample_sizes, y=p_value_proportions, ax=axes[3], width=0.15)
+sns.barplot(x=sample_sizes, y=p_value_proportions, ax=axes[3], width=0.1)
 axes[3].set_xlabel('Sample Size')
-axes[3].set_ylabel('Proportion')
 axes[3].set_title('Proportion of P - values < 0.05 for Different Sample Sizes')
+axes[3].set_ylim(0, 1.1)
+axes[3].axhline(y=1, color='grey', linestyle='--')
+axes[3].set_axisbelow(True)
 axes[3].grid(True)
 
 plt.tight_layout()
