@@ -127,39 +127,34 @@ plot_pacf(netflix, lags=12, title='PACF for Netflix Stock')
 
 # Exercise 3
 
+
 def perform_adf_test(series):
-    best_order = None
-    best_sic = np.inf
-    
-    for lag in range(1, 5):  
-        result = adfuller(series, maxlag=lag)
-        sic = result[5]  
-        
-        if sic < best_sic:
-            best_sic = sic
-            best_order = lag
-    
-    result = adfuller(series, maxlag=best_order)
-    
+
+    result = adfuller(series, autolag="Bic", maxlag=30)
+
+    #result = adfuller(series, maxlag=best_lag)
+
     adf_statistic = result[0]
     critical_values = result[4]
 
     is_stationary = adf_statistic < critical_values['10%']
-    
-    return adf_statistic, is_stationary
+    best_lag = result[2]
+
+    return adf_statistic, is_stationary, best_lag
 
 results = []
 
 for column in data.columns[1:]:
     series = data[column]
-    adf_statistic, is_stationary = perform_adf_test(series)
-    
+    adf_statistic, is_stationary, best_lag = perform_adf_test(series)
+
     result = {
         "Stock": column,
         "ADF Statistic": adf_statistic,
+        "Lag Order": best_lag,
         "Stationary at 90% Confidence Level": is_stationary
     }
-    
+
     results.append(result)
 
 results_df = pd.DataFrame(results)
