@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import statsmodels.api as sm
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from statsmodels.tsa.stattools import adfuller
+from statsmodels.stats.stattools import jarque_bera
 import seaborn as sns
 from scipy.stats import norm
 
@@ -167,6 +168,11 @@ microsoft = data['MICROSOFT']
 
 apple_diffs = apple.diff()
 microsoft_diffs = microsoft.diff()
+
+jb_microsoft = jarque_bera(microsoft_diffs)
+jb_apple = jarque_bera(apple_diffs)
+
+print("JB Microsoft:", jb_microsoft, "JB Apple:", jb_apple)
 
 mean_diff_apple = apple_diffs.mean()
 var_apple = apple_diffs.var()
